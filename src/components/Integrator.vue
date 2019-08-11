@@ -7,20 +7,18 @@
             </div>
             <div class="meme-input-buttons">
                 <button :disabled="!topText && !bottomText" @click="clear">Clear</button>
-                <button :disabled="!topText" @click="match">Match!</button>
+                <button :disabled="topText.length < 3" @click="match">Match!</button>
             </div>
         </div>
         <div class="meme-result">
             <img v-if="$store.getters.src" v-bind:src="$store.getters.src"/>
+            <div class="meme-result-placeholder">{{ $store.getters.imgPlaceholderText }}</div>
         </div>
     </div>
 </template>
 
 <script>
 import axios from 'axios';
-
-const PORT = process.env.VUE_APP_PORT || 3333;
-const url = window.location.protocol + '//' + window.location.hostname + ':' + PORT
 
 var store = {
     debug: true,
@@ -64,7 +62,7 @@ export default {
         if (localStorage.getItem('memes')) {
             store.memes = JSON.parse(localStorage.getItem('memes'))
         } else {
-            axios.get(url + '/getMemes')
+            axios.get('/api/get_memes.js')
                 .then( (response) => {
                     store.memes = response.data
                     localStorage.setItem('memes', JSON.stringify(store.memes))
@@ -83,6 +81,8 @@ export default {
         },
 
         match() {
+            this.$store.commit('loading')
+
             let split = this.topText.split(' ')
             let matches = {}
             let bestMatch = {
@@ -135,7 +135,7 @@ export default {
         },
 
         generateMeme(memeId) {
-            axios.get(url + '/generate', {
+            axios.get('/api/generate.js', {
                     params: {
                         template_id: memeId,
                         text0: this.topText,
@@ -157,10 +157,6 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-img {
-    max-width: 100%;
-    box-shadow: 2px 2px 10px 1px #999;
-}
 .meme {
     display: flex;
     justify-content: space-around;
@@ -185,6 +181,23 @@ img {
     border-radius: 4px;
     flex-grow: 1;
 }
+.meme-result {
+    min-height: 110px;
+    background-color: rgba(255,255,255,0.3);
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.meme-result-placeholder:last-child:not(:first-child) {
+    display: none;
+}
+.meme-result img {
+    margin: 0 auto;
+    max-width: 10%;
+    box-shadow: 2px 2px 10px 1px #999;
+    animation: expand 1s ease forwards;
+}
 .meme-input-fields {
     display: flex;
     flex-direction: column;
@@ -196,6 +209,11 @@ img {
 @media (max-width: 768px), (max-height: 550px) {
     .meme {
         flex-direction: column;
+    }
+}
+@keyframes expand {
+    100% {
+        max-width: 100%;
     }
 }
 </style>
